@@ -17,6 +17,7 @@ int main(int argc, char **argv)
   size_t size;
   char *trace_file_name;
   int trace_view_on = 0;
+  int prediction_type = 0;
 
   unsigned char t_type = 0;
   unsigned char t_sReg_a= 0;
@@ -33,8 +34,30 @@ int main(int argc, char **argv)
     exit(0);
   }
 
+  //Modifying so when a trace view and/or prediction type is not specified, it automatically goes to zero.
   trace_file_name = argv[1];
-  if (argc == 3) trace_view_on = atoi(argv[2]) ;
+  if (argc == 2)
+  {
+	  trace_view_on = 0;
+	  prediction_type = 0;
+  }
+  else if (argc == 3)
+  {
+	  trace_view_on = atoi(argv[2]);
+	  prediction_type = 0;
+  }
+  else if (argc == 4)
+  {
+	  trace_view_on = atoi(argv[2]);
+	  prediction_type = atoi(argv[3]);
+  }
+  else
+  {
+	  printf("Error: invalid amount of arguments");
+	  exit(1);
+  }
+  //--------end argument modification
+
 
   fprintf(stdout, "\n ** opening file %s\n", trace_file_name);
 
