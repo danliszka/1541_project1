@@ -149,4 +149,44 @@ int main(int argc, char **argv)
 
   exit(0);
 }
+//retuns an integer based on the hazard
+//1 - Structural Hazard, stall IF1, IF2, and ID
+//2 - Data Hazard a) stall ID and EX, insert NO-OP into MEM1
+//3 - Data Hazard b) stall ID and EX, insert NO-OP into MEM1/MEM2
+//4 - Control Hazard, flush IF1, IF2, and ID
 
+
+int hazardCheck(struct *IF1inst, struct *IF2inst, struct *IDinst, struct *EXinst, struct *MEM1inst, struct *MEM2inst, struct *WBinst ){
+	
+	// true if the EX instruction is a branch and the ID instruction
+	// is not next sequentially in the code
+	if (EXinst->t_type == 5 && EXinst->addr != IDinst->PC)
+		return 4;
+	
+
+	// true if the WB instruction is a load and the ID instruction is a I 
+	//or R type and the destination register of WB matches either source register of ID
+	if ( WBinst->type == 3 && (IDinst->type == 2 || IDinst-> 1)  && (IDinst->sReg_a == WBinst->dReg || IDinst->sReg_b == WBinst->dReg) {  
+		return 1;
+    }
+
+
+	// true if a load is followed by a branch inst. where the branch depends on
+	// the value returned by the load inst.
+	else if (EXinst->type == 5 && MEM1inst->type == 3 && EXinst->sReg_a == MEM1inst.dReg){
+      return 1;
+
+   
+  // Stall IF a load is followed by a store instruction where the store is
+  // trying to store the value loaded by the load inst.
+   //else if (tr_entry->type == 4 && buffer[0].type == 3)
+    //if (tr_entry->sReg_a == buffer[0].dReg)
+     // return 1;
+
+  //return 0;
+}
+
+	
+  return 0;
+}
+}
