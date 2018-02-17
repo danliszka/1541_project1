@@ -166,24 +166,23 @@ int hazardCheck(struct *IF1inst, struct *IF2inst, struct *IDinst, struct *EXinst
 
 	// true if the WB instruction is a load and the ID instruction is a I 
 	//or R type and the destination register of WB matches either source register of ID
-	if ( WBinst->type == 3 && (IDinst->type == 2 || IDinst-> 1)  && (IDinst->sReg_a == WBinst->dReg || IDinst->sReg_b == WBinst->dReg) {  
+	if (WBinst->type == 3 && (IDinst->type == 2 || IDinst-> 1)  && (IDinst->sReg_a == WBinst->dReg || IDinst->sReg_b == WBinst->dReg) 
 		return 1;
-    }
+    
 
 
 	// true if a load is followed by a branch inst. where the branch depends on
 	// the value returned by the load inst.
-	else if (EXinst->type == 5 && MEM1inst->type == 3 && EXinst->sReg_a == MEM1inst.dReg){
-      return 1;
+	if (EXinst->type == 5 && MEM1inst->type == 3 && EXinst->sReg_a == MEM1inst->dReg)
+      return 2;
+	
 
-   
-  // Stall IF a load is followed by a store instruction where the store is
-  // trying to store the value loaded by the load inst.
-   //else if (tr_entry->type == 4 && buffer[0].type == 3)
-    //if (tr_entry->sReg_a == buffer[0].dReg)
-     // return 1;
-
-  //return 0;
+	// true if a load is followed by a store instruction where the store is
+	// trying to store the value loaded by the load inst.
+	if (EXinst->type == 4 && MEM2->type == 3 && EXinst->sReg_a == MEM2->dReg)
+      return 3;
+	
+	return 0;
 }
 
 	
