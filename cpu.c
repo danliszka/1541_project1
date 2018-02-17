@@ -11,14 +11,22 @@
 #include <arpa/inet.h>
 #include "CPU.h"
 
+#define HASHSIZE 64
+
 int main(int argc, char **argv)
 {
   struct trace_item *tr_entry;
 
-  //NOP
-  struct trace_item NOP = {ti_NOP, 0, 0, 0, 0, 0};
+  //Initialize Hash Table
+  int hashTable[HASHSIZE];
+  for (int i = 0; i < HASHSIZE; i++)
+    hashTable[i] = -1;
 
-  //Pipeline stages
+  //Initialize NOP and Squash instuction
+  struct trace_item NOP = {ti_NOP, 0, 0, 0, 0, 0};
+  struct trace_item squash = {'s', 0, 0, 0, 0, 0};
+
+  //Create and initialize pipeline stages
   struct trace_item *IF1 = &NOP;
   struct trace_item *IF2 = &NOP;
   struct trace_item *ID = &NOP;
@@ -26,7 +34,6 @@ int main(int argc, char **argv)
   struct trace_item *MEM1 = &NOP;
   struct trace_item *MEM2 = &NOP;
   struct trace_item *WB = &NOP;
-  struct trace_item *EXIT_CPU = &NOP; 
 
 
   size_t size;
@@ -49,7 +56,7 @@ int main(int argc, char **argv)
     exit(0);
   }
 
-  //Modifying so when a trace view and/or prediction type is not specified, it automatically goes to zero.
+  //Modifying so when a trace view and/or prediction type is not specified, it automatically goes to zero.----------
   trace_file_name = argv[1];
   if (argc == 2)
   {
@@ -74,6 +81,10 @@ int main(int argc, char **argv)
   //--------end argument modification
 
 
+
+
+
+  //--------Opening file and getting started
   fprintf(stdout, "\n ** opening file %s\n", trace_file_name);
 
   trace_fd = fopen(trace_file_name, "rb");
@@ -84,38 +95,123 @@ int main(int argc, char **argv)
   }
 
   trace_init();
+  //----------------------
+
+
+
+
+  int remaining = 7;
+  int stallType = 0;
 
   while(1) {
-    size = trace_get_item(&tr_entry);
+    // size = trace_get_item(&tr_entry);
 
-    if (!size) {       /* no more instructions (trace_items) to simulate */
+    // if (!size) {       /* no more instructions (trace_items) to simulate */
+    //   printf("+ Simulation terminates at cycle : %u\n", cycle_number);
+    //   break;
+    // }
+    // else{               //parse the next instruction to simulate 
+    //   cycle_number++;
+    //   t_type = tr_entry->type;
+    //   t_sReg_a = tr_entry->sReg_a;
+    //   t_sReg_b = tr_entry->sReg_b;
+    //   t_dReg = tr_entry->dReg;
+    //   t_PC = tr_entry->PC;
+    //   t_Addr = tr_entry->Addr;
+    // }
+
+    if (stallType == 0 || stallType == 4)
+    {
+      size = trace_get_item(&tr_entry);
+    }
+    if (!size && remaining == 0)
+    {
+      /* no more instructions (trace_items) to simulate */
       printf("+ Simulation terminates at cycle : %u\n", cycle_number);
       break;
     }
-    else{              /* parse the next instruction to simulate */
-      cycle_number++;
-      t_type = tr_entry->type;
-      t_sReg_a = tr_entry->sReg_a;
-      t_sReg_b = tr_entry->sReg_b;
-      t_dReg = tr_entry->dReg;
-      t_PC = tr_entry->PC;
-      t_Addr = tr_entry->Addr;
+    else
+    {
+      if (!size)
+      {
+        //Allows the pipeline to coninute to execute the rest of the instructions even though there are no more coming in
+        remaining--;
+      }
+      if (stallType == 0)
+      {
+        //Sends every intruction to the next stage in the pipeline
+        WB = MEM2;
+        MEM2 = MEM1;
+        MEM1 = EX;
+        EX = ID;
+        ID = IF2;
+        IF2 = IF1;
+        IF1 = tr_entry;
+      }
+      else//There are stalls that need to be made
+      {
+        switch (stallType) {
+          case 1: //Structural hazard
+            WB = MEM2;
+            MEM2 = MEM1;
+            MEM1 = EX;
+            EX = NOP;
+            stallType = 0;
+            break;
+
+
+          case 2: //Data hazard A
+            WB = MEM2;
+            MEM2 = MEM1;
+            MEM1 = NOP;
+            stallType = 0;
+            break;
+
+
+          case 3: //Data hazard B
+            WB = MEM2;
+            MEM2 = NOP;
+            stallType = 0;
+            break;
+
+
+          case 4: //Control hazard
+            WB = MEM2;
+            MEM2 = MEM1;
+            MEM1 = EX;
+            EX = SQUASHED;
+            ID = SQUASHED;
+            IF2 = SQUASHED;
+            IF1 = tr_entry;
+            stallType = 0;
+        }
+      }
     }
+
  
 
-    //START 7 STAGE PIPELINE IMPLEMENTATION
-    EXIT_CPU = WB;
-    WB = MEM2;
-    MEM2 = MEM1;
-    MEM1 = EX;
-    EX = ID;
-    ID = IF2;
-    IF2 = IF1;
-    IF1 = tr_entry;
+    //LOOK IF THERE NEED TO BE ANY SQUASHES OR STALLS FOR NEXT CYCLE
+    
+
+
+
+
+    //Parse finishing instruction to be printed
+    cycle_number++;
+    t_type = tr_entry->type;
+    t_sReg_a = tr_entry->sReg_a;
+    t_sReg_b = tr_entry->sReg_b;
+    t_dReg = tr_entry->dReg;
+    t_PC = tr_entry->PC;
+    t_Addr = tr_entry->Addr;
+    
 
 
     if (trace_view_on) {/* print the executed instruction if trace_view_on=1 */
-      switch(EXIT_CPU->type) {
+      switch(WB->type) {
+        case 's':
+          printf("[cycle %d] SQUASHED\n",cycle_number);
+          break;
         case ti_NOP:
           printf("[cycle %d] NOP\n:",cycle_number) ;
           break;
