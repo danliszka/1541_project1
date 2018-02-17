@@ -15,14 +15,19 @@ int main(int argc, char **argv)
 {
   struct trace_item *tr_entry;
 
+  //NOP
+  struct trace_item NOP = {ti_NOP, 0, 0, 0, 0, 0};
+
   //Pipeline stages
-  struct trace_item *IF1;
-  struct trace_item *IF2;
-  struct trace_item *ID;
-  struct trace_item *EX;
-  struct trace_item *MEM1;
-  struct trace_item *MEM2;
-  struct trace_item *WB;
+  struct trace_item *IF1 = &NOP;
+  struct trace_item *IF2 = &NOP;
+  struct trace_item *ID = &NOP;
+  struct trace_item *EX = &NOP;
+  struct trace_item *MEM1 = &NOP;
+  struct trace_item *MEM2 = &NOP;
+  struct trace_item *WB = &NOP;
+  struct trace_item *EXIT_CPU = &NOP; 
+
 
   size_t size;
   char *trace_file_name;
@@ -96,17 +101,21 @@ int main(int argc, char **argv)
       t_PC = tr_entry->PC;
       t_Addr = tr_entry->Addr;
     }
-
-// SIMULATION OF A SINGLE CYCLE cpu IS TRIVIAL 
+ 
 
     //START 7 STAGE PIPELINE IMPLEMENTATION
-
-
-
+    EXIT_CPU = WB;
+    WB = MEM2;
+    MEM2 = MEM1;
+    MEM1 = EX;
+    EX = ID;
+    ID = IF2;
+    IF2 = IF1;
+    IF1 = tr_entry;
 
 
     if (trace_view_on) {/* print the executed instruction if trace_view_on=1 */
-      switch(tr_entry->type) {
+      switch(EXIT_CPU->type) {
         case ti_NOP:
           printf("[cycle %d] NOP\n:",cycle_number) ;
           break;
