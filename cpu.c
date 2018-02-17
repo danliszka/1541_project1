@@ -14,6 +14,16 @@
 int main(int argc, char **argv)
 {
   struct trace_item *tr_entry;
+
+  //Pipeline stages
+  struct trace_item *IF1;
+  struct trace_item *IF2;
+  struct trace_item *ID;
+  struct trace_item *EX;
+  struct trace_item *MEM1;
+  struct trace_item *MEM2;
+  struct trace_item *WB;
+
   size_t size;
   char *trace_file_name;
   int trace_view_on = 0;
@@ -54,7 +64,7 @@ int main(int argc, char **argv)
   else
   {
 	  printf("Error: invalid amount of arguments");
-	  exit(1);
+	  exit(0);
   }
   //--------end argument modification
 
@@ -87,8 +97,13 @@ int main(int argc, char **argv)
       t_Addr = tr_entry->Addr;
     }
 
-// SIMULATION OF A SINGLE CYCLE cpu IS TRIVIAL - EACH INSTRUCTION IS EXECUTED
-// IN ONE CYCLE
+// SIMULATION OF A SINGLE CYCLE cpu IS TRIVIAL 
+
+    //START 7 STAGE PIPELINE IMPLEMENTATION
+
+
+
+
 
     if (trace_view_on) {/* print the executed instruction if trace_view_on=1 */
       switch(tr_entry->type) {
