@@ -104,8 +104,10 @@ int main(int argc, char **argv)
   int hazardType = 0;
   int hashIndex = 0;
   int squashCount = 0;
+  int foundControlHazard = 0;
 
   while(1) {
+    foundControlHazard = 0;
 
     if (hazardType == 0 || hazardType == 4)
     {
@@ -124,18 +126,8 @@ int main(int argc, char **argv)
         //Allows the pipeline to coninute to execute the rest of the instructions even though there are no more coming in
         remaining--;
       }
-      if (hazardType == 0)
-      {
-        //Sends every intruction to the next stage in the pipeline
-        WB = MEM2;
-        MEM2 = MEM1;
-        MEM1 = EX;
-        EX = ID;
-        ID = IF2;
-        IF2 = IF1;
-        IF1 = tr_entry;
-      }
-      else//There are stalls or squashes that need to be made
+      
+        //Check for hazards
       {
 
         //Check if there is a control hazard and update hash table if branch
@@ -146,7 +138,8 @@ int main(int argc, char **argv)
           hashIndex = hashIndex >> 3;
           hashIndex = hashIndex % HASHSIZE;
 
-          if (prediction_type == 0 && EX->Addr != ID->PC) // Squash instructions, not taken policy false
+          // No prediction
+          if (prediction_type == 0 && EX->Addr != ID->PC) 
           {
             WB = MEM2;
             MEM2 = MEM1;
@@ -157,6 +150,7 @@ int main(int argc, char **argv)
             IF1 = tr_entry;
             hazardType = 0;
             squashCount += 3;
+            foundControlHazard = 1;
           }
 
 
@@ -180,6 +174,7 @@ int main(int argc, char **argv)
                 IF1 = tr_entry;
                 hazardType = 0;
                 squashCount += 3;
+                foundControlHazard = 1;
               }
               else //prediction correct, branch not taken
               {
@@ -209,6 +204,7 @@ int main(int argc, char **argv)
                 IF1 = tr_entry;
                 hazardType = 0;
                 squashCount += 3;
+                foundControlHazard = 1;
               }
             }
           }
@@ -234,6 +230,7 @@ int main(int argc, char **argv)
                 IF1 = tr_entry;
                 hazardType = 0;
                 squashCount += 3;
+                foundControlHazard = 1;
               }
               else //prediction correct, branch not taken
               {
@@ -260,6 +257,7 @@ int main(int argc, char **argv)
                   IF1 = tr_entry;
                   hazardType = 0;
                   squashCount += 3;
+                  foundControlHazard = 1;
                 }
                 else //prediction correct, branch not taken
                 {
@@ -283,6 +281,7 @@ int main(int argc, char **argv)
                   IF1 = tr_entry;
                   hazardType = 0;
                   squashCount += 3;
+                  foundControlHazard = 1;
                 }
                 else //prediction correct, branch not taken
                 {
@@ -311,6 +310,7 @@ int main(int argc, char **argv)
                   IF1 = tr_entry;
                   hazardType = 0;
                   squashCount += 3;
+                  foundControlHazard = 1;
                 }
               }
               else if (hashTable[hashIndex] == 3)
@@ -335,16 +335,32 @@ int main(int argc, char **argv)
                   IF1 = tr_entry;
                   hazardType = 0;
                   squashCount += 3;
+                  foundControlHazard = 1;
                 }
               }
             }
           }
         }
 
+        
+        // If a cycle did not already execute to fix a control hazard
+        if (!foundControlHazard)
+        {
         //Now check for structural or data hazard
         //INSERT WILL's FUNCTION HERE!!!!!
 
-        switch (hazardType) {
+          switch (hazardType) {
+          case 0: //No hazard, normal cycle
+            WB = MEM2;
+            MEM2 = MEM1;
+            MEM1 = EX;
+            EX = ID;
+            ID = IF2;
+            IF2 = IF1;
+            IF1 = tr_entry;
+            break;
+
+
           case 1: //Structural hazard
             WB = MEM2;
             MEM2 = MEM1;
@@ -367,7 +383,9 @@ int main(int argc, char **argv)
             MEM2 = &NOP;
             hazardType = 0;
             break;
-            
+         
+          }
+           
         }
       }
     }
