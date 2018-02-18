@@ -109,6 +109,7 @@ int main(int argc, char **argv)
   int hazardType = 0;
   int hashIndex = 0;
   int squashCount = 0;
+  int nopCount = 0;
   int foundControlHazard = 0;
 
   while(1) {
@@ -118,6 +119,8 @@ int main(int argc, char **argv)
     {
       /* no more instructions (trace_items) to simulate */
       printf("+ Simulation terminates at cycle : %u\n", cycle_number);
+      printf("squashes: %d\n", squashCount);
+      printf("nops: %d\n", nopCount);
       break;
     }
     else
@@ -142,6 +145,8 @@ int main(int argc, char **argv)
           // No prediction
           if (prediction_type == 0 && EX->Addr != ID->PC) 
           {
+            //Squash intstructions
+            //Get new instruction
             size = trace_get_item(&tr_entry);
 
             WB = MEM2;
@@ -168,6 +173,7 @@ int main(int argc, char **argv)
                 hashTable[hashIndex] = 1;
 
                 //squash instructions
+                //Get new instruction
                 size = trace_get_item(&tr_entry);
 
                 WB = MEM2;
@@ -200,6 +206,7 @@ int main(int argc, char **argv)
                 hashTable[hashIndex] = 0; 
 
                 //squash instructions
+                //Get new instruction
                 size = trace_get_item(&tr_entry);
 
                 WB = MEM2;
@@ -228,6 +235,7 @@ int main(int argc, char **argv)
                 hashTable[hashIndex] = 1;
 
                 //squash instructions
+                //Get new instruction
                 size = trace_get_item(&tr_entry);
 
                 WB = MEM2;
@@ -257,6 +265,7 @@ int main(int argc, char **argv)
                   hashTable[hashIndex] = 1;
 
                   //squash instructions
+                  //Get new instruction
                   size = trace_get_item(&tr_entry);
 
                   WB = MEM2;
@@ -283,6 +292,7 @@ int main(int argc, char **argv)
                   hashTable[hashIndex] = 3;
 
                   //squash instructions
+                  //Get new instruction
                   size = trace_get_item(&tr_entry);
 
                   WB = MEM2;
@@ -314,6 +324,7 @@ int main(int argc, char **argv)
                   hashTable[hashIndex] = 0;
 
                   //squash instructions
+                  //Get new instruction
                   size = trace_get_item(&tr_entry);
 
                   WB = MEM2;
@@ -341,6 +352,7 @@ int main(int argc, char **argv)
                   hashTable[hashIndex] = 2;
 
                   //squash instructions
+                  //Get new instruction
                   size = trace_get_item(&tr_entry);
 
                   WB = MEM2;
@@ -386,6 +398,7 @@ int main(int argc, char **argv)
             MEM1 = EX;
             EX = &NOP;
             hazardType = 0;
+            nopCount++;
             break;
 
 
@@ -394,6 +407,7 @@ int main(int argc, char **argv)
             MEM2 = MEM1;
             MEM1 = &NOP;
             hazardType = 0;
+            nopCount++;
             break;
 
 
@@ -401,6 +415,7 @@ int main(int argc, char **argv)
             WB = MEM2;
             MEM2 = &NOP;
             hazardType = 0;
+            nopCount++;
             break;
          
           }
