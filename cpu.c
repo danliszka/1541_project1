@@ -19,7 +19,8 @@ int main(int argc, char **argv)
 
   //Initialize Hash Table
   int hashTable[HASHSIZE];
-  for (int i = 0; i < HASHSIZE; i++)
+  int i;
+  for (i = 0; i < HASHSIZE; i++)
     hashTable[i] = -1;
 
   //Initialize NOP and Squash instuction
