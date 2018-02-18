@@ -29,7 +29,6 @@ int main(int argc, char **argv)
 
   //Initialize NOP and Squash instuction
   struct trace_item NOP = {ti_NOP, 0, 0, 0, 0, 0};
-  struct trace_item SQUASHED = {'s', 0, 0, 0, 0, 0};
 
   //Create and initialize pipeline stages
   struct trace_item *IF1 = &NOP;
@@ -152,9 +151,12 @@ int main(int argc, char **argv)
             WB = MEM2;
             MEM2 = MEM1;
             MEM1 = EX;
-            EX = &SQUASHED;
-            ID = &SQUASHED;
-            IF2 = &SQUASHED;
+            EX = ID;
+            EX->type = 's'; //SQUASHED
+            ID = IF2;
+            ID->type = 's'; //SQUASHED
+            IF2 = IF1;
+            IF2->type = 's'; //SQUASHED
             IF1 = tr_entry;
             hazardType = 0;
             squashCount += 3;
@@ -179,9 +181,12 @@ int main(int argc, char **argv)
                 WB = MEM2;
                 MEM2 = MEM1;
                 MEM1 = EX;
-                EX = &SQUASHED;
-                ID = &SQUASHED;
-                IF2 = &SQUASHED;
+                EX = ID;
+                EX->type = 's'; //SQUASHED
+                ID = IF2;
+                ID->type = 's'; //SQUASHED
+                IF2 = IF1;
+                IF2->type = 's'; //SQUASHED
                 IF1 = tr_entry;
                 hazardType = 0;
                 squashCount += 3;
@@ -212,9 +217,12 @@ int main(int argc, char **argv)
                 WB = MEM2;
                 MEM2 = MEM1;
                 MEM1 = EX;
-                EX = &SQUASHED;
-                ID = &SQUASHED;
-                IF2 = &SQUASHED;
+                EX = ID;
+                EX->type = 's'; //SQUASHED
+                ID = IF2;
+                ID->type = 's'; //SQUASHED
+                IF2 = IF1;
+                IF2->type = 's'; //SQUASHED
                 IF1 = tr_entry;
                 hazardType = 0;
                 squashCount += 3;
@@ -241,9 +249,12 @@ int main(int argc, char **argv)
                 WB = MEM2;
                 MEM2 = MEM1;
                 MEM1 = EX;
-                EX = &SQUASHED;
-                ID = &SQUASHED;
-                IF2 = &SQUASHED;
+                EX = ID;
+                EX->type = 's'; //SQUASHED
+                ID = IF2;
+                ID->type = 's'; //SQUASHED
+                IF2 = IF1;
+                IF2->type = 's'; //SQUASHED
                 IF1 = tr_entry;
                 hazardType = 0;
                 squashCount += 3;
@@ -271,9 +282,12 @@ int main(int argc, char **argv)
                   WB = MEM2;
                   MEM2 = MEM1;
                   MEM1 = EX;
-                  EX = &SQUASHED;
-                  ID = &SQUASHED;
-                  IF2 = &SQUASHED;
+                  EX = ID;
+                  EX->type = 's'; //SQUASHED
+                  ID = IF2;
+                  ID->type = 's'; //SQUASHED
+                  IF2 = IF1;
+                  IF2->type = 's'; //SQUASHED
                   IF1 = tr_entry;
                   hazardType = 0;
                   squashCount += 3;
@@ -298,9 +312,12 @@ int main(int argc, char **argv)
                   WB = MEM2;
                   MEM2 = MEM1;
                   MEM1 = EX;
-                  EX = &SQUASHED;
-                  ID = &SQUASHED;
-                  IF2 = &SQUASHED;
+                  EX = ID;
+                  EX->type = 's'; //SQUASHED
+                  ID = IF2;
+                  ID->type = 's'; //SQUASHED
+                  IF2 = IF1;
+                  IF2->type = 's'; //SQUASHED
                   IF1 = tr_entry;
                   hazardType = 0;
                   squashCount += 3;
@@ -330,9 +347,12 @@ int main(int argc, char **argv)
                   WB = MEM2;
                   MEM2 = MEM1;
                   MEM1 = EX;
-                  EX = &SQUASHED;
-                  ID = &SQUASHED;
-                  IF2 = &SQUASHED;
+                  EX = ID;
+                  EX->type = 's'; //SQUASHED
+                  ID = IF2;
+                  ID->type = 's'; //SQUASHED
+                  IF2 = IF1;
+                  IF2->type = 's'; //SQUASHED
                   IF1 = tr_entry;
                   hazardType = 0;
                   squashCount += 3;
@@ -358,9 +378,12 @@ int main(int argc, char **argv)
                   WB = MEM2;
                   MEM2 = MEM1;
                   MEM1 = EX;
-                  EX = &SQUASHED;
-                  ID = &SQUASHED;
-                  IF2 = &SQUASHED;
+                  EX = ID;
+                  EX->type = 's'; //SQUASHED
+                  ID = IF2;
+                  ID->type = 's'; //SQUASHED
+                  IF2 = IF1;
+                  IF2->type = 's'; //SQUASHED
                   IF1 = tr_entry;
                   hazardType = 0;
                   squashCount += 3;
@@ -438,41 +461,42 @@ int main(int argc, char **argv)
     if (trace_view_on) {/* print the executed instruction if trace_view_on=1 */
       switch(WB->type) {
         case 's':
-          printf("[cycle %d] SQUASHED\n",cycle_number);
+          printf("[cycle %d]",cycle_number);
+          printf(" SQUASHED --> (PC: %x)\n", WB->PC);
           break;
         case ti_NOP:
           printf("[cycle %d] NOP\n",cycle_number) ;
           break;
         case ti_RTYPE:
           printf("[cycle %d] RTYPE:",cycle_number) ;
-          printf(" (PC: %x)(sReg_a: %d)(sReg_b: %d)(dReg: %d) \n", tr_entry->PC, tr_entry->sReg_a, tr_entry->sReg_b, tr_entry->dReg);
+          printf(" (PC: %x)(sReg_a: %d)(sReg_b: %d)(dReg: %d) \n", WB->PC, WB->sReg_a, WB->sReg_b, WB->dReg);
           break;
         case ti_ITYPE:
           printf("[cycle %d] ITYPE:",cycle_number) ;
-          printf(" (PC: %x)(sReg_a: %d)(dReg: %d)(addr: %x)\n", tr_entry->PC, tr_entry->sReg_a, tr_entry->dReg, tr_entry->Addr);
+          printf(" (PC: %x)(sReg_a: %d)(dReg: %d)(addr: %x)\n", WB->PC, WB->sReg_a, WB->dReg, WB->Addr);
           break;
         case ti_LOAD:
           printf("[cycle %d] LOAD:",cycle_number) ;
-          printf(" (PC: %x)(sReg_a: %d)(dReg: %d)(addr: %x)\n", tr_entry->PC, tr_entry->sReg_a, tr_entry->dReg, tr_entry->Addr);
+          printf(" (PC: %x)(sReg_a: %d)(dReg: %d)(addr: %x)\n", WB->PC, WB->sReg_a, WB->dReg, WB->Addr);
           break;
         case ti_STORE:
           printf("[cycle %d] STORE:",cycle_number) ;
-          printf(" (PC: %x)(sReg_a: %d)(sReg_b: %d)(addr: %x)\n", tr_entry->PC, tr_entry->sReg_a, tr_entry->sReg_b, tr_entry->Addr);
+          printf(" (PC: %x)(sReg_a: %d)(sReg_b: %d)(addr: %x)\n", WB->PC, WB->sReg_a, WB->sReg_b, WB->Addr);
           break;
         case ti_BRANCH:
           printf("[cycle %d] BRANCH:",cycle_number) ;
-          printf(" (PC: %x)(sReg_a: %d)(sReg_b: %d)(addr: %x)\n", tr_entry->PC, tr_entry->sReg_a, tr_entry->sReg_b, tr_entry->Addr);
+          printf(" (PC: %x)(sReg_a: %d)(sReg_b: %d)(addr: %x)\n", WB->PC, WB->sReg_a, WB->sReg_b, WB->Addr);
           break;
         case ti_JTYPE:
           printf("[cycle %d] JTYPE:",cycle_number) ;
-          printf(" (PC: %x)(addr: %x)\n", tr_entry->PC,tr_entry->Addr);
+          printf(" (PC: %x)(addr: %x)\n", WB->PC,WB->Addr);
           break;
         case ti_SPECIAL:
           printf("[cycle %d] SPECIAL:\n",cycle_number) ;
           break;
         case ti_JRTYPE:
           printf("[cycle %d] JRTYPE:",cycle_number) ;
-          printf(" (PC: %x) (sReg_a: %d)(addr: %x)\n", tr_entry->PC, tr_entry->dReg, tr_entry->Addr);
+          printf(" (PC: %x) (sReg_a: %d)(addr: %x)\n", WB->PC, WB->dReg, WB->Addr);
           break;
       }
     }
