@@ -137,7 +137,7 @@ int main(int argc, char **argv)
         if (EX->type == ti_BRANCH)
         {
           //Get hash index
-          hashIndex = EX->Addr;
+          hashIndex = EX->PC;
           hashIndex = hashIndex >> 3;
           hashIndex = hashIndex % HASHSIZE;
 
