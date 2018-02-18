@@ -56,7 +56,7 @@ int main(int argc, char **argv)
     exit(0);
   }
 
-  //Modifying so when a trace view and/or prediction type is not specified, it automatically goes to zero.----------
+  //--------Modifying so when a trace view and/or prediction type is not specified, it automatically goes to zero.
   trace_file_name = argv[1];
   if (argc == 2)
   {
@@ -65,13 +65,13 @@ int main(int argc, char **argv)
   }
   else if (argc == 3)
   {
-	  trace_view_on = atoi(argv[2]);
-	  prediction_type = 0;
+	  prediction_type = atoi(argv[2]);
+	  trace_view_on = 0;
   }
-  else if (argc == 4)
+  else if (argc == 4) //follows order requirement
   {
-	  trace_view_on = atoi(argv[2]);
-	  prediction_type = atoi(argv[3]);
+	  trace_view_on = atoi(argv[3]);
+	  prediction_type = atoi(argv[2]);
   }
   else
   {
@@ -100,27 +100,14 @@ int main(int argc, char **argv)
 
 
 
-  int remaining = 7;
-  int stallType = 0;
+  int remaining = 6;
+  int hazardType = 0;
+  int hashIndex = 0;
+  int squashCount = 0;
 
   while(1) {
-    // size = trace_get_item(&tr_entry);
 
-    // if (!size) {       /* no more instructions (trace_items) to simulate */
-    //   printf("+ Simulation terminates at cycle : %u\n", cycle_number);
-    //   break;
-    // }
-    // else{               //parse the next instruction to simulate 
-    //   cycle_number++;
-    //   t_type = tr_entry->type;
-    //   t_sReg_a = tr_entry->sReg_a;
-    //   t_sReg_b = tr_entry->sReg_b;
-    //   t_dReg = tr_entry->dReg;
-    //   t_PC = tr_entry->PC;
-    //   t_Addr = tr_entry->Addr;
-    // }
-
-    if (stallType == 0 || stallType == 4)
+    if (hazardType == 0 || hazardType == 4)
     {
       size = trace_get_item(&tr_entry);
     }
@@ -137,7 +124,7 @@ int main(int argc, char **argv)
         //Allows the pipeline to coninute to execute the rest of the instructions even though there are no more coming in
         remaining--;
       }
-      if (stallType == 0)
+      if (hazardType == 0)
       {
         //Sends every intruction to the next stage in the pipeline
         WB = MEM2;
@@ -148,34 +135,19 @@ int main(int argc, char **argv)
         IF2 = IF1;
         IF1 = tr_entry;
       }
-      else//There are stalls that need to be made
+      else//There are stalls or squashes that need to be made
       {
-        switch (stallType) {
-          case 1: //Structural hazard
-            WB = MEM2;
-            MEM2 = MEM1;
-            MEM1 = EX;
-            EX = NOP;
-            stallType = 0;
-            break;
 
+        //Check if there is a control hazard and update hash table if branch
+        if (EX->type == ti_BRANCH)
+        {
+          //Get hash index
+          hashIndex = EX->Addr;
+          hashIndex = hashIndex >> 3;
+          hashIndex = hashIndex % HASHSIZE;
 
-          case 2: //Data hazard A
-            WB = MEM2;
-            MEM2 = MEM1;
-            MEM1 = NOP;
-            stallType = 0;
-            break;
-
-
-          case 3: //Data hazard B
-            WB = MEM2;
-            MEM2 = NOP;
-            stallType = 0;
-            break;
-
-
-          case 4: //Control hazard
+          if (prediction_type == 0 && EX->Addr != ID->PC) // Squash instructions, not taken policy false
+          {
             WB = MEM2;
             MEM2 = MEM1;
             MEM1 = EX;
@@ -183,15 +155,228 @@ int main(int argc, char **argv)
             ID = SQUASHED;
             IF2 = SQUASHED;
             IF1 = tr_entry;
-            stallType = 0;
+            hazardType = 0;
+            squashCount += 3;
+          }
+
+
+          // 1-bit prediction
+          else if (prediction_type == 1)
+          {
+            if (hashTable[hashIndex] == -1 || hashTable[hashIndex] == 0) //no prediction yet or predict not taken, either way use "not taken" policy
+            {
+              if (EX->Addr == ID->PC) //prediction wrong, branch taken
+              {
+                //update hash table
+                hashIndex[hashIndex] = 1;
+
+                //squash instructions
+                WB = MEM2;
+                MEM2 = MEM1;
+                MEM1 = EX;
+                EX = SQUASHED;
+                ID = SQUASHED;
+                IF2 = SQUASHED;
+                IF1 = tr_entry;
+                hazardType = 0;
+                squashCount += 3;
+              }
+              else //prediction correct, branch not taken
+              {
+                //update hash table
+                hashIndex[hashIndex] = 0;
+              }
+            }
+            else if (hashTable[hashIndex] == 1) 
+            {
+              if (EX->Addr == ID->PC) //prediction correct, branch taken
+              {
+                //update hash table
+                hashTable[hashIndex] = 1; //unnecessary, but putting this line here helps with organizing
+              }
+              else //prediction wrong, branch not taken
+              {
+                //update hash table
+                hashTable[hashIndex] = 0; 
+
+                //squash instructions
+                WB = MEM2;
+                MEM2 = MEM1;
+                MEM1 = EX;
+                EX = SQUASHED;
+                ID = SQUASHED;
+                IF2 = SQUASHED;
+                IF1 = tr_entry;
+                hazardType = 0;
+                squashCount += 3;
+              }
+            }
+          }
+
+
+          // 2-bit prediction
+          else if (prediction_type == 2)
+          {
+            if (hashTable[hashIndex] == -1) //"not taken policy"
+            {
+              if (EX->Addr == ID->PC) //prediction wrong, branch taken
+              {
+                //update hash table
+                hashIndex[hashIndex] = 1;
+
+                //squash instructions
+                WB = MEM2;
+                MEM2 = MEM1;
+                MEM1 = EX;
+                EX = SQUASHED;
+                ID = SQUASHED;
+                IF2 = SQUASHED;
+                IF1 = tr_entry;
+                hazardType = 0;
+                squashCount += 3;
+              }
+              else //prediction correct, branch not taken
+              {
+                //update hash table
+                hashIndex[hashIndex] = 0;
+              }
+            }
+            else
+            {
+              if (hashTable[hashIndex] == 0)
+              {
+                if (EX->Addr == ID->PC) //prediction wrong, branch taken
+                {
+                  //update hash table
+                  hashTable[hashIndex] = 1;
+
+                  //squash instructions
+                  WB = MEM2;
+                  MEM2 = MEM1;
+                  MEM1 = EX;
+                  EX = SQUASHED;
+                  ID = SQUASHED;
+                  IF2 = SQUASHED;
+                  IF1 = tr_entry;
+                  hazardType = 0;
+                  squashCount += 3;
+                }
+                else //prediction correct, branch not taken
+                {
+                  hashTable[hashIndex] = 0;
+                }
+              }
+              else if (hashTable[hashIndex] == 1)
+              {
+                if (EX->Addr == ID->PC) //prediction wrong, branch taken
+                {
+                  //update hash table
+                  hashTable[hashIndex] = 3;
+
+                  //squash instructions
+                  WB = MEM2;
+                  MEM2 = MEM1;
+                  MEM1 = EX;
+                  EX = SQUASHED;
+                  ID = SQUASHED;
+                  IF2 = SQUASHED;
+                  IF1 = tr_entry;
+                  hazardType = 0;
+                  squashCount += 3;
+                }
+                else //prediction correct, branch not taken
+                {
+                  hashTable[hashIndex] = 0;
+                }
+              }
+              else if (hashTable[hashIndex] == 2)
+              {
+                if (EX->Addr == ID->PC) //prediction correct, branch taken
+                {
+                  //update hash table
+                  hashTable[hashIndex] = 3;
+                }
+                else //prediction wrong, branch not taken
+                {
+                  //update hash table
+                  hashTable[hashIndex] = 0;
+
+                  //squash instructions
+                  WB = MEM2;
+                  MEM2 = MEM1;
+                  MEM1 = EX;
+                  EX = SQUASHED;
+                  ID = SQUASHED;
+                  IF2 = SQUASHED;
+                  IF1 = tr_entry;
+                  hazardType = 0;
+                  squashCount += 3;
+                }
+              }
+              else if (hashTable[hashIndex] == 3)
+              {
+                if (EX->Addr == ID->PC) //prediction correct, branch taken
+                {
+                  //update hash table
+                  hashTable[hashIndex] = 3;
+                }
+                else //prediction wrong, branch not taken
+                {
+                  //update hash table
+                  hashTable[hashIndex] = 2;
+
+                  //squash instructions
+                  WB = MEM2;
+                  MEM2 = MEM1;
+                  MEM1 = EX;
+                  EX = SQUASHED;
+                  ID = SQUASHED;
+                  IF2 = SQUASHED;
+                  IF1 = tr_entry;
+                  hazardType = 0;
+                  squashCount += 3;
+                }
+              }
+            }
+          }
+        }
+
+        //Now check for structural or data hazard
+        //INSERT WILL's FUNCTION HERE!!!!!
+
+        switch (hazardType) {
+          case 1: //Structural hazard
+            WB = MEM2;
+            MEM2 = MEM1;
+            MEM1 = EX;
+            EX = NOP;
+            hazardType = 0;
+            break;
+
+
+          case 2: //Data hazard A
+            WB = MEM2;
+            MEM2 = MEM1;
+            MEM1 = NOP;
+            hazardType = 0;
+            break;
+
+
+          case 3: //Data hazard B
+            WB = MEM2;
+            MEM2 = NOP;
+            hazardType = 0;
+            break;
+            
         }
       }
     }
 
+
+
+
  
 
-    //LOOK IF THERE NEED TO BE ANY SQUASHES OR STALLS FOR NEXT CYCLE
-    
 
 
 
@@ -205,7 +390,6 @@ int main(int argc, char **argv)
     t_PC = tr_entry->PC;
     t_Addr = tr_entry->Addr;
     
-
 
     if (trace_view_on) {/* print the executed instruction if trace_view_on=1 */
       switch(WB->type) {
