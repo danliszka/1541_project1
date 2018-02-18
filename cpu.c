@@ -24,7 +24,7 @@ int main(int argc, char **argv)
 
   //Initialize NOP and Squash instuction
   struct trace_item NOP = {ti_NOP, 0, 0, 0, 0, 0};
-  struct trace_item squash = {'s', 0, 0, 0, 0, 0};
+  struct trace_item SQUASHED = {'s', 0, 0, 0, 0, 0};
 
   //Create and initialize pipeline stages
   struct trace_item *IF1 = &NOP;
@@ -151,9 +151,9 @@ int main(int argc, char **argv)
             WB = MEM2;
             MEM2 = MEM1;
             MEM1 = EX;
-            EX = SQUASHED;
-            ID = SQUASHED;
-            IF2 = SQUASHED;
+            EX = &SQUASHED;
+            ID = &SQUASHED;
+            IF2 = &SQUASHED;
             IF1 = tr_entry;
             hazardType = 0;
             squashCount += 3;
@@ -168,15 +168,15 @@ int main(int argc, char **argv)
               if (EX->Addr == ID->PC) //prediction wrong, branch taken
               {
                 //update hash table
-                hashIndex[hashIndex] = 1;
+                hashTable[hashIndex] = 1;
 
                 //squash instructions
                 WB = MEM2;
                 MEM2 = MEM1;
                 MEM1 = EX;
-                EX = SQUASHED;
-                ID = SQUASHED;
-                IF2 = SQUASHED;
+                EX = &SQUASHED;
+                ID = &SQUASHED;
+                IF2 = &SQUASHED;
                 IF1 = tr_entry;
                 hazardType = 0;
                 squashCount += 3;
@@ -184,7 +184,7 @@ int main(int argc, char **argv)
               else //prediction correct, branch not taken
               {
                 //update hash table
-                hashIndex[hashIndex] = 0;
+                hashTable[hashIndex] = 0;
               }
             }
             else if (hashTable[hashIndex] == 1) 
@@ -203,9 +203,9 @@ int main(int argc, char **argv)
                 WB = MEM2;
                 MEM2 = MEM1;
                 MEM1 = EX;
-                EX = SQUASHED;
-                ID = SQUASHED;
-                IF2 = SQUASHED;
+                EX = &SQUASHED;
+                ID = &SQUASHED;
+                IF2 = &SQUASHED;
                 IF1 = tr_entry;
                 hazardType = 0;
                 squashCount += 3;
@@ -222,15 +222,15 @@ int main(int argc, char **argv)
               if (EX->Addr == ID->PC) //prediction wrong, branch taken
               {
                 //update hash table
-                hashIndex[hashIndex] = 1;
+                hashTable[hashIndex] = 1;
 
                 //squash instructions
                 WB = MEM2;
                 MEM2 = MEM1;
                 MEM1 = EX;
-                EX = SQUASHED;
-                ID = SQUASHED;
-                IF2 = SQUASHED;
+                EX = &SQUASHED;
+                ID = &SQUASHED;
+                IF2 = &SQUASHED;
                 IF1 = tr_entry;
                 hazardType = 0;
                 squashCount += 3;
@@ -238,7 +238,7 @@ int main(int argc, char **argv)
               else //prediction correct, branch not taken
               {
                 //update hash table
-                hashIndex[hashIndex] = 0;
+                hashTable[hashIndex] = 0;
               }
             }
             else
@@ -254,9 +254,9 @@ int main(int argc, char **argv)
                   WB = MEM2;
                   MEM2 = MEM1;
                   MEM1 = EX;
-                  EX = SQUASHED;
-                  ID = SQUASHED;
-                  IF2 = SQUASHED;
+                  EX = &SQUASHED;
+                  ID = &SQUASHED;
+                  IF2 = &SQUASHED;
                   IF1 = tr_entry;
                   hazardType = 0;
                   squashCount += 3;
@@ -277,9 +277,9 @@ int main(int argc, char **argv)
                   WB = MEM2;
                   MEM2 = MEM1;
                   MEM1 = EX;
-                  EX = SQUASHED;
-                  ID = SQUASHED;
-                  IF2 = SQUASHED;
+                  EX = &SQUASHED;
+                  ID = &SQUASHED;
+                  IF2 = &SQUASHED;
                   IF1 = tr_entry;
                   hazardType = 0;
                   squashCount += 3;
@@ -305,9 +305,9 @@ int main(int argc, char **argv)
                   WB = MEM2;
                   MEM2 = MEM1;
                   MEM1 = EX;
-                  EX = SQUASHED;
-                  ID = SQUASHED;
-                  IF2 = SQUASHED;
+                  EX = &SQUASHED;
+                  ID = &SQUASHED;
+                  IF2 = &SQUASHED;
                   IF1 = tr_entry;
                   hazardType = 0;
                   squashCount += 3;
@@ -329,9 +329,9 @@ int main(int argc, char **argv)
                   WB = MEM2;
                   MEM2 = MEM1;
                   MEM1 = EX;
-                  EX = SQUASHED;
-                  ID = SQUASHED;
-                  IF2 = SQUASHED;
+                  EX = &SQUASHED;
+                  ID = &SQUASHED;
+                  IF2 = &SQUASHED;
                   IF1 = tr_entry;
                   hazardType = 0;
                   squashCount += 3;
@@ -349,7 +349,7 @@ int main(int argc, char **argv)
             WB = MEM2;
             MEM2 = MEM1;
             MEM1 = EX;
-            EX = NOP;
+            EX = &NOP;
             hazardType = 0;
             break;
 
@@ -357,28 +357,20 @@ int main(int argc, char **argv)
           case 2: //Data hazard A
             WB = MEM2;
             MEM2 = MEM1;
-            MEM1 = NOP;
+            MEM1 = &NOP;
             hazardType = 0;
             break;
 
 
           case 3: //Data hazard B
             WB = MEM2;
-            MEM2 = NOP;
+            MEM2 = &NOP;
             hazardType = 0;
             break;
             
         }
       }
     }
-
-
-
-
- 
-
-
-
 
 
     //Parse finishing instruction to be printed
