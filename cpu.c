@@ -393,12 +393,12 @@ int main(int argc, char **argv)
 
     //Parse finishing instruction to be printed
     cycle_number++;
-    t_type = tr_entry->type;
-    t_sReg_a = tr_entry->sReg_a;
-    t_sReg_b = tr_entry->sReg_b;
-    t_dReg = tr_entry->dReg;
-    t_PC = tr_entry->PC;
-    t_Addr = tr_entry->Addr;
+    t_type = WB->type;
+    t_sReg_a = WB->sReg_a;
+    t_sReg_b = WB->sReg_b;
+    t_dReg = WB->dReg;
+    t_PC = WB->PC;
+    t_Addr = WB->Addr;
     
 
     if (trace_view_on) {/* print the executed instruction if trace_view_on=1 */
@@ -448,4 +448,5 @@ int main(int argc, char **argv)
 
   exit(0);
 }
+
 
